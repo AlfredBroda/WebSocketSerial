@@ -12,48 +12,37 @@ class SerialProcess(multiprocessing.Process):
         multiprocessing.Process.__init__(self)
         self.input_queue = input_queue
         self.output_queue = output_queue
-        self.sp = None
-
-    def open(self):
-        print "opening serial " + SERIAL_PORT
         self.sp = serial.Serial(SERIAL_PORT, SERIAL_BAUDRATE, timeout=1)
+
+    def reset(self):
+        print "reopening serial " + SERIAL_PORT
+        if self.sp.is_open:
+            self.sp.close()
+            time.sleep(1)
+        self.sp.open()
         #TODO: Determine if flushing is required
         self.sp.flushInput()
 
     def close(self):
-        if self.sp:
-            print "closing serial " + SERIAL_PORT
-            self.sp.close()
-            self.sp = None
-        else:
-            print "serial " + SERIAL_PORT + " is not open, cannot close"
+        print "closing serial " + SERIAL_PORT
+        self.sp.close()
+        self.sp = None
 
     def writeSerial(self, data):
-        if self.sp:
-            self.sp.write(bytes(data))
-            # time.sleep(1)
-        else:
-            print "serial " + SERIAL_PORT + " is not open, cannot write"
+        self.sp.write(bytes(data))
+        # time.sleep(1)
 
     def readSerial(self):
-        if self.sp:
-            return self.sp.readline().replace("\n", "")
-        else:
-            print "serial " + SERIAL_PORT + " is not open, cannot read"
-            return ""
-
-    def flushInput(self):
-        if self.sp:
-    	    self.sp.flushInput()
+        return self.sp.readline().replace("\n", "")
 
     def run(self):
         # self.sp.flushInput()
 
         while True:
             # look for incoming serial data
-            if (self.sp and self.sp.inWaiting() > 0):
+            if (self.sp.inWaiting() > 0):
             	data = self.readSerial()
-                print "reading from serial: " + data
+                print "recieved from serial: " + data
                 # send it back to tornado
             	self.output_queue.put(data)
                 continue
@@ -63,5 +52,5 @@ class SerialProcess(multiprocessing.Process):
                 data = self.input_queue.get()
 
                 # send it to the serial device
-                self.writeSerial(data)
                 print "writing to serial: " + data
+                self.writeSerial(data)

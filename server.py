@@ -24,8 +24,8 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         print 'new connection'
         clients.append(self)
         self.write_message("connected")
-        sp.open()
- 
+        sp.reset()
+
     def on_message(self, message):
         print 'tornado received from client: %s' % json.dumps(message)
         input_queue.put(message)
