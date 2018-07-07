@@ -12,25 +12,42 @@ class SerialProcess(multiprocessing.Process):
         multiprocessing.Process.__init__(self)
         self.input_queue = input_queue
         self.output_queue = output_queue
+        self.sp = None
 
     def open(self):
         print "opening serial " + SERIAL_PORT
         self.sp = serial.Serial(SERIAL_PORT, SERIAL_BAUDRATE, timeout=1)
+        #TODO: Determine if flushing is required
+        # self.sp.flushInput()
 
     def close(self):
-        print "closing serial " + SERIAL_PORT
-        self.sp.close()
+        if self.sp:
+            print "closing serial " + SERIAL_PORT
+            self.sp.close()
+            self.sp = None
+        else:
+            print "serial " + SERIAL_PORT + " is not open, cannot close"
 
     def writeSerial(self, data):
-        self.sp.write(bytes(data))
-        # time.sleep(1)
+        if self.sp:
+            self.sp.write(bytes(data))
+            # time.sleep(1)
+        else:
+            print "serial " + SERIAL_PORT + " is not open, cannot write"
 
     def readSerial(self):
-        return self.sp.readline().replace("\n", "")
+        if self.sp:
+            return self.sp.readline().replace("\n", "")
+        else:
+            print "serial " + SERIAL_PORT + " is not open, cannot read"
+            return ""
+
+    def flushInput(self):
+        if self.sp:
+    	    self.sp.flushInput()
 
     def run(self):
-
-    	self.sp.flushInput()
+        # self.sp.flushInput()
 
         while True:
             # look for incoming tornado request
@@ -42,7 +59,7 @@ class SerialProcess(multiprocessing.Process):
                 print "writing to serial: " + data
 
             # look for incoming serial data
-            if (self.sp.inWaiting() > 0):
+            if (self.sp and self.sp.inWaiting() > 0):
             	data = self.readSerial()
                 print "reading from serial: " + data
                 # send it back to tornado
