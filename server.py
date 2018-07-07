@@ -4,8 +4,6 @@ import tornado.web
 import tornado.websocket
 import tornado.gen
 from tornado.options import define, options
-import os
-import time
 import multiprocessing
 import serialworker
 import json
@@ -16,7 +14,6 @@ clients = []
 
 input_queue = multiprocessing.Queue()
 output_queue = multiprocessing.Queue()
-
 
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
@@ -36,32 +33,32 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         sp.close()
 
 
-## check the queue for pending messages, and rely that to all connected clients
+# check the queue for pending messages, and rely that to all connected clients
 def checkQueue():
-	if not output_queue.empty():
-		message = output_queue.get()
-		for c in clients:
-			c.write_message(message)
+    if not output_queue.empty():
+        message = output_queue.get()
+        for c in clients:
+            c.write_message(message)
 
 
 if __name__ == '__main__':
-	## start the serial worker in background (as a deamon)
-	sp = serialworker.SerialProcess(input_queue, output_queue)
-	sp.daemon = True
-	sp.start()
-	tornado.options.parse_command_line()
-	app = tornado.web.Application(
-	    handlers=[
-	        (r"/", WebSocketHandler)
-	    ]
-	)
-	httpServer = tornado.httpserver.HTTPServer(app)
-	httpServer.listen(options.port)
-	print "Listening on port:", options.port
+    # start the serial worker in background (as a deamon)
+    sp = serialworker.SerialProcess(input_queue, output_queue)
+    sp.daemon = True
+    sp.start()
+    tornado.options.parse_command_line()
+    app = tornado.web.Application(
+        handlers=[
+            (r"/", WebSocketHandler)
+        ]
+    )
+    httpServer = tornado.httpserver.HTTPServer(app)
+    httpServer.listen(options.port)
+    print "Listening on port:", options.port
 
-	mainLoop = tornado.ioloop.IOLoop.instance()
-	## adjust the scheduler_interval according to the frames sent by the serial port
-	scheduler_interval = 100
-	scheduler = tornado.ioloop.PeriodicCallback(checkQueue, scheduler_interval)
-	scheduler.start()
-	mainLoop.start()
+    mainLoop = tornado.ioloop.IOLoop.instance()
+    # adjust the scheduler_interval according to the frames sent by the serial port
+    scheduler_interval = 100
+    scheduler = tornado.ioloop.PeriodicCallback(checkQueue, scheduler_interval)
+    scheduler.start()
+    mainLoop.start()
