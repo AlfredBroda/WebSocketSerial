@@ -16,8 +16,8 @@ class SerialProcess(multiprocessing.Process):
         self.sp = serial.Serial(SERIAL_PORT, SERIAL_BAUDRATE, timeout=1)
 
     def open(self):
+        print "opening serial " + SERIAL_PORT
         if not self.sp.is_open:
-            print "opening serial " + SERIAL_PORT
             self.sp.open()
             self.sp.flushInput()
 
@@ -30,8 +30,8 @@ class SerialProcess(multiprocessing.Process):
 
     def close(self):
         print "closing serial " + SERIAL_PORT
-        self.sp.close()
-        self.sp = None
+        if self.sp.is_open:
+            self.sp.close()
 
     def writeSerial(self, data):
         self.sp.write(bytes(data))
