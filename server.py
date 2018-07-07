@@ -9,29 +9,31 @@ import time
 import multiprocessing
 import serialworker
 import json
- 
+
 define("port", default=8080, help="run on the given port", type=int)
- 
-clients = [] 
+
+clients = []
 
 input_queue = multiprocessing.Queue()
 output_queue = multiprocessing.Queue()
 
 
- 
+
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def open(self):
         print 'new connection'
         clients.append(self)
         self.write_message("connected")
+        sp.open()
  
     def on_message(self, message):
         print 'tornado received from client: %s' % json.dumps(message)
         input_queue.put(message)
- 
+
     def on_close(self):
         print 'connection closed'
         clients.remove(self)
+        sp.close()
 
 
 ## check the queue for pending messages, and rely that to all connected clients
